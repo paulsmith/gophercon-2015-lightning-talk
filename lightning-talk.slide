@@ -1,0 +1,168 @@
+How Go helped save America
+Rescue of HealthCare.gov
+10 Jul 2015
+Tags: golang, healthcare.gov
+
+Paul Smith
+Ad Hoc LLC
+paulsmith@pobox.com
+https://pauladamsmith.com/
+@paulsmith
+
+* Rewind to late 2013 ...
+
+* HealthCare.gov launch
+
+- Doors open on October 1st
+- Site crashes throughout the first day
+- A total of *6* people enrolled for coverage that first day
+- Limps through the next few weeks
+- On October 18th, the "tech surge" begins
+
+* The HealthCare.gov Tech Surge
+
+.image team.jpeg
+
+* The HealthCare.gov Tech Surge
+
+- Site was originally built by stable of government technology contractors
+- Tech surge == small group of engineers, assembled by the White House, from startups and tech companies you've heard of, with experience building high-traffic websites and consumer technology
+- Initial motivation: go in deep, figure out what was wrong, come up with recommendations to fix
+- Reality: as soon as we saw it up close, we dropped everything, moved to suburban DC, and spent next 2-1/2 months turning the site around
+- Read the Stephen Brill's story about it, cover story of Time magazine, March 10, 2014
+
+* At stake
+
+- The delivery mechanism for health care reform
+- If that fails, the Affordable Care Act could fail
+- If the ACA fails, millions of people suffer needlessly
+- If the ACA fails, the president's signature domestic policy achievement fails
+- If his signature policy fails, his ability to govern is imperiled
+
+* So, no pressure
+
+* By December 1st ...
+
+- We had made much progress
+- Stabilized site: no more extended downtime
+- Cut latencies from 8 sec. to around 1/2 sec.
+- Increased capacity: software optimizations, additional hardware
+- Implemented "war room" process for accelerated decision-making
+
+* But ...
+
+* Not out of the woods yet
+
+- Despite fixes, still vulnerable to peak traffic tipping site over
+- Deadline of December 22nd to apply for first available coverage looms
+- Administration planning to invite Americans back to the site on December 1st
+- Needed a way to manage peak demand
+
+* Enter Go ...
+
+* The "Queue"
+
+- Goal: manage peak demand, keep site from melting down, eventually serve everyone
+- Send random %age of users to page where they can leave their email address
+- Rest of users would go straight through to the site
+- After peak subsides, email queued users inviting them back
+- Not a true queue or waiting line
+- Combined with monitoring of overall CPU and memory and a traffic "throttle" (operational tool for determining the %age of traffic to go to the queue), give confidence could operate site
+
+* Implementation
+
+- Simple Go process combined with AJAX form on static web page
+- Running on 2 nodes (for redundancy), behind load balancer
+- Main goroutine, listen for HTTP requests
+- On separate goroutine, handle request and write user's email and other info (like timestamp, referrer) to a file
+- Separate management process to process files and send emails inviting users back
+
+* Design considerations
+
+- Simple! Like, dead simple.
+
+Remember, we were dealing with a very, very (unnecessarily) complicated overall site,
+with enterprise service buses, complex and poorly-understood distributed component
+interactions, etc.
+
+- Self-contained
+
+No separate database process, no extra-process communication. Marginally
+increased administrative burden in return for operationally simplicity and
+robustness.
+
+- Text & files
+
+The process should just append lines of text to a file. Enabled possible
+recovery from failure, let downstream management tools be simple Unix text
+processors.
+
+* Peek at the code
+
+.code code.go /^func /,
+
+* Don't panic
+
+* Preparing to deploy
+
+- Quick code review from Google Gophers to catch any boneheaded mistakes
+
+We were extremely sleep-deprived and exhausted at this point
+
+- Performance test
+
+Handled many tens of thousands of TPS -- load test contractor said was order of
+magnitude more than any other service he had tested.
+
+- Final review board approval
+
+Despite crisis mode, still had to follow official sign-off processes to deploy
+to production.
+
+* Moment of truth ...
+
+.image queue.jpeg
+
+* December 1st and beyond
+
+On the big day, and for the rest of the month of December, the combination of
+the throttle and queue largely kept the site up (excepting small outages
+unrelated to amount of traffic, mostly operator error from other teams).
+
+Queued people were brought back to the site, eventually everyone who wanted to
+enroll, could and did.
+
+- Launch day: *6* enrollments
+- December 23rd: *100,000+* enrollments
+
+* Legacy
+
+* Legacy of the email queue
+
+- Still in operation: today's successful hacks == tomorrow's critical infrastructure
+- America == saved :-)
+
+.image potus.jpeg
+
+* Why Go?
+
+* Why Go?
+
+- Operational simplicity: static binary, scp, done
+- Static types and type inference: refactor under pressue with confidence -- the compiler was a member of the team
+- Efficient: handled millions of requests with minimal resources
+- Can't be too clever:
+
+Minimal, orthogonal language meant others could quickly review, despite sleep
+deprivation, and gave confidence it would do what we expected.
+
+* What next?
+
+* What next?
+
+- Over the last 10 years, consumer technology exploded, government technology fell behind
+- But expectations and demands on government services grow -- hence the wacky notion you could get health insurance from a website
+- We need to close the gap, so that everyone gets the health care they deserve, veterans get the benefits and services they're entitled to, immigrants get the fair and efficient processing of their status afforded to them, etc.
+- Government doesn't know how to deliver consumer-friendly websites and apps that can handle large traffic ...
+- ... but you do
+- U.S. Digital Service (USDS), 18F, Ad Hoc
